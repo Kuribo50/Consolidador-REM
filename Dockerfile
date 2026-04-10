@@ -3,17 +3,8 @@ FROM node:20-bookworm-slim AS builder
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY package*.json ./
 RUN npm ci
-
-COPY backend/requirements.txt ./backend/requirements.txt
-RUN pip3 install --no-cache-dir -r ./backend/requirements.txt
 
 COPY . .
 RUN npm run build
@@ -32,11 +23,16 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
+    python3-venv \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt ./backend/requirements.txt
-RUN pip3 install --no-cache-dir -r ./backend/requirements.txt
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /opt/venv/bin/pip install --no-cache-dir -r ./backend/requirements.txt
+
+ENV PATH="/opt/venv/bin:${PATH}"
 
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
