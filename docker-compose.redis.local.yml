@@ -1,5 +1,5 @@
-# Local development helper only.
-# Not used by the main production deployment.
+# Local development helper only (optional second stage for queue mode redis).
+# Not used by the first production deployment on Coolify.
 services:
   redis:
     image: redis:7-alpine

@@ -1,11 +1,11 @@
-# Local development only.
-# Production on Coolify should use docker-compose.coolify.yml.
+# Production deployment for Coolify (Docker Compose build pack).
+# This stack uses ONLY local Docker build from this repository.
+# No Docker Hub / external registry required.
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    image: consolidador-rem:local
     restart: unless-stopped
     ports:
       - "3000:3000"
