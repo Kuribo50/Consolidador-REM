@@ -1,0 +1,40 @@
+# Node / Next
+node_modules/
+.next/
+out/
+dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs / local reports
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+stress-report.json
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temp / runtime artifacts
+tmp/
+temp/
+*.tmp
+
+# Generated outputs
+*.xlsx
+*.csv
+~$*.xlsx

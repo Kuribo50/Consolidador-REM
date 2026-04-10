@@ -1,0 +1,77 @@
+from diccionarios.base import DiccionarioSpec
+from diccionarios.registry import register
+
+
+register(
+    DiccionarioSpec(
+        id="rm_episodios_urgencia",
+        nombre="RM-EpisodiosUrgencia",
+        tipo="rm",
+        descripcion="Episodios de urgencia cerrados del período",
+        required_core_columns=[
+            "HOSP_Code",
+            "NombreEstablecimiento",
+            "NombreLocal",
+            "NumerodeEpisodio",
+            "FechaEpisodio",
+            "HoraEpisodio",
+            "EstadoEpisodio",
+            "PrevisionEpisodio",
+            "PlanSaludEpisodio",
+            "FechaAtencion",
+            "HoraAtencion",
+        ],
+        recommended_columns=[
+            "ClasificacionConsulta",
+            "DiagnosticoPrincipal",
+            "Flag_SolicitudHospitalizacion",
+            "FechaAltaMédica",
+            "HoraAltaMédica",
+            "FechaCierreAdministrativa",
+            "HoraCierreAdministrativa",
+            "DestinoEgreso",
+            "Pertinencia",
+        ],
+        optional_patterns=[
+            "TIngreso",
+            "TAlta",
+            "Violencia",
+            "RVS_",
+            "RV_",
+            "Accidente",
+            "Categorizacion",
+        ],
+        known_aliases={
+            "NumeroEpisodio": "NumerodeEpisodio",
+            "FechaAltaMedica": "FechaAltaMédica",
+            "HoraAltaMedica": "HoraAltaMédica",
+        },
+        orden_columnas=[
+            "_archivo_origen",
+            "HOSP_Code",
+            "NombreEstablecimiento",
+            "NombreLocal",
+            "NumerodeEpisodio",
+            "FechaEpisodio",
+            "HoraEpisodio",
+            "EstadoEpisodio",
+            "PrevisionEpisodio",
+            "PlanSaludEpisodio",
+            "FechaAtencion",
+            "HoraAtencion",
+            "ClasificacionConsulta",
+            "DiagnosticoPrincipal",
+            "Flag_SolicitudHospitalizacion",
+            "FechaAltaMédica",
+            "HoraAltaMédica",
+            "FechaCierreAdministrativa",
+            "HoraCierreAdministrativa",
+            "DestinoEgreso",
+            "Pertinencia",
+        ],
+        allow_extra_columns=True,
+        min_required_match=0.6,
+        crear_columnas_faltantes=True,
+    )
+)
+
