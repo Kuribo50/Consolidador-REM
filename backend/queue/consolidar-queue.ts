@@ -93,12 +93,20 @@ function runProcess(command: string, args: string[], timeoutMs: number): Promise
       rejectOnce(error);
     });
 
-    child.on("close", (code) => {
+    child.on("close", (code, signal) => {
       if (timedOut) {
         const error = new Error("timeout") as ProcessError;
         error.code = 1;
         error.stdout = stdout;
         error.stderr = `${stderr}\ntimeout`;
+        rejectOnce(error);
+        return;
+      }
+      if (signal) {
+        const error = new Error(`Process terminated by signal ${signal}`) as ProcessError;
+        error.code = signal;
+        error.stdout = stdout;
+        error.stderr = stderr;
         rejectOnce(error);
         return;
       }
