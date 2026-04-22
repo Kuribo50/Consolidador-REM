@@ -4,6 +4,7 @@ Consolidador RM + Percápita — CESFAM Dr. Alberto Reyes / DISAM Tomé (Edició
 """
 
 import argparse
+import os
 import time
 import re
 import unicodedata
@@ -134,7 +135,9 @@ def main() -> int:
     log_info(f"Procesando {len(archivos)} archivo(s) con Polars...")
 
     dfs: List[pl.DataFrame] = []
-    rep_detectadas, rep_faltantes, rep_extras, rep_renombradas = [], [], [], []
+    renombradas_set: set[str] = set()
+    faltantes_set: set[str] = set()
+    extras_set: set[str] = set()
     sep_override = args.separador if args.separador != "auto" else None
 
     def worker(ruta: Path):
@@ -153,6 +156,7 @@ def main() -> int:
                         allow_extra_columns=spec.allow_extra_columns,
                         min_required_match=spec.min_required_match,
                         crear_columnas_faltantes=spec.crear_columnas_faltantes,
+                        include_detectadas=False,
                     )
                     if df_aplicado is not None:
                         bloques_out.append((df_aplicado, report, ruta.name))
@@ -161,15 +165,33 @@ def main() -> int:
             log_error(f"Error en worker para {ruta.name}: {e}")
             return []
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    cpu_count = os.cpu_count() or 2
+    env_workers = os.getenv("CONSOLIDADOR_MAX_WORKERS", "").strip()
+    if env_workers.isdigit() and int(env_workers) > 0:
+        max_workers = min(len(archivos), int(env_workers))
+    else:
+        # Evitar sobre-suscripcion: Polars ya paraleliza internamente.
+        max_workers = max(1, min(len(archivos), 4, cpu_count))
+    log_info(f"Workers activos: {max_workers} (CPU detectada: {cpu_count})")
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         results = list(executor.map(worker, archivos))
 
     for bloques in results:
         for df_app, rep, nombre in bloques:
-            rep_detectadas.extend(rep["detectadas"])
-            rep_faltantes.extend(rep["faltantes"])
-            rep_extras.extend(rep["extras"])
-            rep_renombradas.extend(rep["renombradas"])
+            for r in rep["renombradas"]:
+                origen = str(r.get("ColumnaOriginal", "")).strip()
+                final = str(r.get("ColumnaFinal", "")).strip()
+                if origen and final:
+                    renombradas_set.add(f"{origen} -> {final}")
+            for r in rep["faltantes"]:
+                faltante = str(r.get("ColumnaRequerida", "")).strip()
+                if faltante:
+                    faltantes_set.add(faltante)
+            for r in rep["extras"]:
+                extra = str(r.get("ColumnaExtra", "")).strip()
+                if extra:
+                    extras_set.add(extra)
             dfs.append(df_app)
             log_info(f"     {nombre}: {df_app.height:,} registros")
 
@@ -250,21 +272,9 @@ def main() -> int:
     t5 = time.time()
     log_info(f"Escritura {args.formato}: {t5 - t4:.2f}s")
 
-    renombradas_set = sorted({
-        f"{str(r.get('ColumnaOriginal', '')).strip()} -> {str(r.get('ColumnaFinal', '')).strip()}"
-        for r in rep_renombradas
-        if str(r.get("ColumnaOriginal", "")).strip() and str(r.get("ColumnaFinal", "")).strip()
-    })
-    faltantes_set = sorted({
-        str(r.get("ColumnaRequerida", "")).strip()
-        for r in rep_faltantes
-        if str(r.get("ColumnaRequerida", "")).strip()
-    })
-    extras_set = sorted({
-        str(r.get("ColumnaExtra", "")).strip()
-        for r in rep_extras
-        if str(r.get("ColumnaExtra", "")).strip()
-    })
+    renombradas_sorted = sorted(renombradas_set)
+    faltantes_sorted = sorted(faltantes_set)
+    extras_sorted = sorted(extras_set)
 
     def _preview(items: List[str], n: int = 8) -> str:
         if not items:
@@ -273,7 +283,7 @@ def main() -> int:
         suffix = " ..." if len(items) > n else ""
         return "; ".join(head) + suffix
 
-    columnas_sacadas = len(extras_set) if not spec.allow_extra_columns else 0
+    columnas_sacadas = len(extras_sorted) if not spec.allow_extra_columns else 0
 
     meta = Metadata(
         filas=total_filas,
@@ -281,13 +291,13 @@ def main() -> int:
         archivos=len(dfs),
         nombre=nombre_descarga,
         columnas_unidas=columnas_unidas,
-        columnas_renombradas=len(renombradas_set),
-        columnas_faltantes=len(faltantes_set),
-        columnas_extras=len(extras_set),
+        columnas_renombradas=len(renombradas_sorted),
+        columnas_faltantes=len(faltantes_sorted),
+        columnas_extras=len(extras_sorted),
         columnas_sacadas=columnas_sacadas,
-        preview_renombradas=_preview(renombradas_set),
-        preview_faltantes=_preview(faltantes_set),
-        preview_extras=_preview(extras_set),
+        preview_renombradas=_preview(renombradas_sorted),
+        preview_faltantes=_preview(faltantes_sorted),
+        preview_extras=_preview(extras_sorted),
     )
     emit_metadata(meta)
     log_info(f"Exito: {output_path} (Total Script: {time.time() - start_script:.2f}s)")

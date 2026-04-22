@@ -51,6 +51,10 @@ def merge_duplicate_columns(df: pl.DataFrame) -> pl.DataFrame:
         key = normalize_column_name(col)
         groups.setdefault(key, []).append(col)
 
+    # Fast path: no hay colisiones por normalizacion, no hace falta materializar un select completo.
+    if all(len(cols) == 1 for cols in groups.values()):
+        return df
+
     expressions = []
     seen_final_names = set()
     
@@ -124,6 +128,7 @@ def apply_diccionario_spec(
     allow_extra_columns: bool,
     min_required_match: float,
     crear_columnas_faltantes: bool,
+    include_detectadas: bool = True,
 ) -> Tuple[Optional[pl.DataFrame], Dict[str, List[dict]]]:
     """
     Versión optimizada con caché para evitar fuzzy matching repetitivo.
@@ -135,8 +140,14 @@ def apply_diccionario_spec(
     canon_order = list(orden_columnas) if orden_columnas else (core + rec)
     
     # Cache key: tupla de nombres de columnas originales + configuración clave
-    cache_key = (tuple(cols_in), tuple(required_core_columns), tuple(recommended_columns), 
-                 tuple(orden_columnas) if orden_columnas else None, allow_extra_columns)
+    cache_key = (
+        tuple(cols_in),
+        tuple(required_core_columns),
+        tuple(recommended_columns),
+        tuple(orden_columnas) if orden_columnas else None,
+        allow_extra_columns,
+        include_detectadas,
+    )
     
     if cache_key in _MAPPING_CACHE:
         mapping, report_base = _MAPPING_CACHE[cache_key]
@@ -208,16 +219,26 @@ def apply_diccionario_spec(
         df_mapped = df.rename(mapping)
         df_merged = merge_duplicate_columns(df_mapped)
 
-        # Reporte de detectadas
+        # Reporte de detectadas (opcional; puede ser muy voluminoso en lotes grandes).
         known_set = set(core) | set(rec) | set(canon_order)
-        for original in cols_in:
-            if original == "_archivo_origen": continue
-            final = mapping.get(original, strip_suffix(original))
-            kind = "core" if final in core else "recommended" if final in rec else "ordered" if final in known_set else "extra"
-            report["detectadas"].append({
-                "Archivo": source_label, "ColumnaOriginal": original,
-                "ColumnaFinal": final, "Clasificacion": kind, "Motivo": reasons.get(original, ""),
-            })
+        if include_detectadas:
+            for original in cols_in:
+                if original == "_archivo_origen":
+                    continue
+                final = mapping.get(original, strip_suffix(original))
+                kind = (
+                    "core"
+                    if final in core
+                    else "recommended"
+                    if final in rec
+                    else "ordered"
+                    if final in known_set
+                    else "extra"
+                )
+                report["detectadas"].append({
+                    "Archivo": source_label, "ColumnaOriginal": original,
+                    "ColumnaFinal": final, "Clasificacion": kind, "Motivo": reasons.get(original, ""),
+                })
 
         # Filtrado de extras si no se permiten
         if not allow_extra_columns:

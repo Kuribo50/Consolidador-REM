@@ -1344,7 +1344,7 @@ export default function ConsolidadorPage() {
             </div>
           </section>
           <div className="sidebar-version" aria-label="Versión de la aplicación">
-            v.001
+            v.0002
           </div>
         </aside>
 
