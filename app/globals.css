@@ -456,6 +456,17 @@ body.theme-dark .downloads-nav-clear {
   flex-shrink: 0;
 }
 
+.sidebar-version {
+  margin-top: auto;
+  padding: 10px 18px 14px;
+  border-top: 1px solid rgba(219, 226, 234, 0.6);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .sidebar::-webkit-scrollbar {
   width: 4px;
 }
@@ -2475,6 +2486,10 @@ body.theme-dark .downloads-nav-clear {
     border-bottom: 1px solid var(--border);
   }
 
+  .sidebar-version {
+    margin-top: 0;
+  }
+
   .main-panel {
     margin-left: 0;
     padding: 20px;
@@ -3632,4 +3647,8 @@ body.theme-dark .downloads-nav.open .downloads-nav-trigger {
 body.theme-dark .downloads-nav-trigger[data-focus-visible] {
   outline: 2px solid rgba(147, 197, 253, 0.7) !important;
   outline-offset: 2px !important;
+}
+
+body.theme-dark .sidebar-version {
+  border-top-color: rgba(71, 85, 105, 0.5) !important;
 }
