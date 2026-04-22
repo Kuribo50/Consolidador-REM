@@ -937,7 +937,9 @@ export default function ConsolidadorPage() {
     setSegundosTranscurridos(0);
 
     const fd = new FormData();
-    archivosAEnviar.forEach((f) => fd.append("archivos", f));
+    for (const file of archivosAEnviar) {
+      fd.append("archivos", file);
+    }
     fd.append("formato", formato);
     fd.append("tipo", "auto");
     fd.append("separador", separador);
@@ -1344,7 +1346,7 @@ export default function ConsolidadorPage() {
             </div>
           </section>
           <div className="sidebar-version" aria-label="Versión de la aplicación">
-            v.0004
+            05
           </div>
         </aside>
 
