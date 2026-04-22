@@ -20,3 +20,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+    labels:
+      # Aumenta limite de carga HTTP en Traefik para evitar 413 en uploads grandes.
+      - "traefik.http.middlewares.consolidador-upload.buffering.maxRequestBodyBytes=1073741824"
+      - "traefik.http.middlewares.consolidador-upload.buffering.memRequestBodyBytes=16777216"
+      - "coolify.traefik.middlewares=consolidador-upload"
